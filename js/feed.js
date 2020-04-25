@@ -1,3 +1,5 @@
+import curFocused from './nav.js';
+
 function fetchSubreddit(sr) {
   fetch(`https://www.reddit.com/r/${sr}.json`)
     .then((response) => response.json())
@@ -17,6 +19,7 @@ function fetchSubreddit(sr) {
         lst.appendChild(listElement);
       });
       lst.firstChild.firstChild.focus();
+      curFocused.post = lst.firstChild.firstChild;
     });
 }
 

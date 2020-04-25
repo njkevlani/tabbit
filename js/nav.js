@@ -54,3 +54,30 @@ $('ul.tabs').on('click', 'a', (e) => {
   const sr = e.currentTarget.hash.substring(1);
   fetchSubreddit(sr);
 });
+
+var curFocused = {
+  post: null,
+};
+
+document.onkeypress = function (e) {
+  e = e || window.event;
+  if (e.key == 'j' && curFocused.post) {
+    // move down: next post
+    const nextParent = curFocused.post.parentNode.nextElementSibling;
+    if (nextParent) {
+      const next = nextParent.firstChild;
+      curFocused.post = next;
+      next.focus();
+    }
+  } else if (e.key == 'k' && curFocused.post) {
+    // move up previous post
+    const previousParent = curFocused.post.parentNode.previousElementSibling;
+    if (previousParent) {
+      const previous = previousParent.firstChild;
+      curFocused.post = previous;
+      previous.focus();
+    }
+  }
+};
+
+export default curFocused;
