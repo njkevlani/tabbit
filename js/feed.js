@@ -16,6 +16,7 @@ function fetchSubreddit(sr) {
 
         lst.appendChild(listElement);
       });
+      lst.firstChild.firstChild.focus();
     });
 }
 
