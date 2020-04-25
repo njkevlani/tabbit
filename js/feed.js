@@ -2,13 +2,19 @@ function fetchSubreddit(sr) {
   fetch(`https://www.reddit.com/r/${sr}.json`)
     .then((response) => response.json())
     .then((data) => {
-      const c = document.getElementById(sr);
+      const lst = document.getElementById(sr).getElementsByTagName('ul')[0];
+      lst.innerHTML = ''
       data.data.children.forEach((el) => {
         const p = el.data;
+
         const a = document.createElement('a');
-        a.setAttribute('href', p.url);
+        a.setAttribute('href', `https://www.reddit.com${p.permalink}`);
         a.innerText = p.title;
-        c.appendChild(a);
+
+        const listElement = document.createElement('li')
+        listElement.appendChild(a)
+
+        lst.appendChild(listElement);
       });
     });
 }
