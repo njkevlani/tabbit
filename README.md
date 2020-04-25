@@ -1,7 +1,7 @@
 # Tabbit
 A tab based, webapp layout for reddit.
 ## TODO
-- [ ] Vim keybindings to navigate
+- [x] Vim keybindings to navigate
 - [ ] Keep content of at lease 2 tabs and at  most 3 tabs in memory (keep content of current, previous, next tab in memory, free memory allocated for rest)
 - [ ] Better Card Layout
 - [ ] Load images, gifs, videos
