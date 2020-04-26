@@ -41,7 +41,7 @@ function getFeedSection (sr) {
   section.classList.add('col')
   section.classList.add('s12')
   section.id = sr
-  section.innerHTML = `<h2>r/${sr}</h2><ul></ul>`
+  section.innerHTML = `<h2>r/${sr}</h2><table class="striped"><tbody></tbody></table>`
   return section
 }
 

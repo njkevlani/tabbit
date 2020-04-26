@@ -4,7 +4,7 @@ function fetchSubreddit (sr) {
   window.fetch(`https://www.reddit.com/r/${sr}.json`)
     .then((response) => response.json())
     .then((data) => {
-      const lst = document.getElementById(sr).getElementsByTagName('ul')[0]
+      const lst = document.getElementById(sr).getElementsByTagName('tbody')[0]
       lst.innerHTML = ''
       const postFocusList = []
       data.data.children.forEach((el) => {
@@ -18,8 +18,21 @@ function fetchSubreddit (sr) {
           anchor: a
         })
 
-        const listElement = document.createElement('li')
-        listElement.appendChild(a)
+        const atd = document.createElement('td')
+        atd.classList.add('feedData')
+        atd.appendChild(a)
+
+        const s = document.createElement('td')
+        s.classList.add('feedData')
+        if (p.score > 999) {
+          s.innerText = `${(p.score / 1000).toFixed(2)}K `
+        } else {
+          s.innerText = `${p.score} `
+        }
+
+        const listElement = document.createElement('tr')
+        listElement.appendChild(s)
+        listElement.appendChild(atd)
 
         lst.appendChild(listElement)
       })
