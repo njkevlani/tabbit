@@ -1,4 +1,4 @@
-import fetchSubreddit from './feed.js';
+import { fetchSubreddit } from './feed.js';
 
 const srList = [
   'all',
@@ -28,6 +28,7 @@ function getNavItem(sr) {
   const navTarget = document.createElement('a');
   navTarget.innerText = sr;
   navTarget.setAttribute('href', `#${sr}`);
+  navTarget.classList.add('tabAnchor');
   navItem.appendChild(navTarget);
   return navItem;
 }
@@ -49,7 +50,64 @@ srList.forEach((sr) => {
   feed.appendChild(getFeedSection(sr));
 });
 
-fetchSubreddit(srList[0]);
+const srFocusList = []
+navList.childNodes.forEach((el) => {
+  srFocusList.push({
+    anchor: el.getElementsByClassName('tabAnchor')[0],
+  });
+});
+
+for (let i = 0; i < srFocusList.length; i++) {
+  if (i > 0) {
+    srFocusList[i].previous = srFocusList[i - 1]
+  }
+  if (i + 1 < srFocusList.length) {
+    srFocusList[i].next = srFocusList[i + 1]
+  }
+}
+
+var focusList = {
+  post: null,
+  subreddit: srFocusList
+};
+
+var curFocused = {
+  post: null,
+  subreddit: focusList.subreddit[0]
+};
+
+document.onkeypress = function (e) {
+  e = e || window.event;
+  if (e.key == 'j' && curFocused.post) {
+    // move down: next post
+    const next = curFocused.post.next;
+    if (next) {
+      next.anchor.focus();
+      curFocused.post = next;
+    }
+  } else if (e.key == 'k' && curFocused.post) {
+    // move up previous post
+    const previous = curFocused.post.previous;
+    if (previous) {
+      previous.anchor.focus();
+      curFocused.post = previous;
+    }
+  } else if (e.key == 'h' && curFocused.subreddit) {
+    //  move left: previous subreddit
+    const previous = curFocused.subreddit.previous;
+    if (previous) {
+      previous.anchor.focus();
+      curFocused.subreddit = previous;
+    }
+  } else if (e.key == 'l') {
+    //  move right: next subreddit
+    const next = curFocused.subreddit.next;
+    if (next) {
+      next.anchor.focus();
+      curFocused.subreddit = next;
+    }
+  }
+};
 
 $('ul.tabs').on('click', 'a', (e) => {
   // console.log(e);
@@ -57,46 +115,6 @@ $('ul.tabs').on('click', 'a', (e) => {
   fetchSubreddit(sr);
 });
 
-var curFocused = {
-  post: null,
-  subreddit: navList.firstChild.firstChild
-};
+fetchSubreddit(srList[0]);
 
-document.onkeypress = function (e) {
-  e = e || window.event;
-  if (e.key == 'j' && curFocused.post) {
-    // move down: next post
-    const nextParent = curFocused.post.parentNode.nextElementSibling;
-    if (nextParent) {
-      const next = nextParent.firstChild;
-      curFocused.post = next;
-      next.focus();
-    }
-  } else if (e.key == 'k' && curFocused.post) {
-    // move up previous post
-    const previousParent = curFocused.post.parentNode.previousElementSibling;
-    if (previousParent) {
-      const previous = previousParent.firstChild;
-      curFocused.post = previous;
-      previous.focus();
-    }
-  } else if (e.key == 'h' && curFocused.subreddit) {
-    //  move left: previous subreddit
-    const previousParent = curFocused.subreddit.parentElement.previousElementSibling;
-    if (previousParent) {
-      const previous = previousParent.firstChild;
-      curFocused.subreddit = previous;
-      previous.focus();
-    }
-  } else if (e.key == 'l') {
-    //  move right: next subreddit
-    const nextParent = curFocused.subreddit.parentElement.nextElementSibling;
-    if (nextParent) {
-      const next = nextParent.firstChild;
-      curFocused.subreddit = next;
-      next.focus();
-    }
-  }
-};
-
-export default curFocused;
+export { curFocused, focusList };
