@@ -18,7 +18,7 @@ const srList = [
   'xfce'
 ]
 
-const $ = window.$
+const M = window.M
 
 function getNavItem (sr) {
   // <li class="tab col s3"><a href="#target">Target</a></li>
@@ -111,11 +111,13 @@ document.onkeypress = function (e) {
   }
 }
 
-$('ul.tabs').on('click', 'a', (e) => {
-  // console.log(e)
-  const sr = e.currentTarget.hash.substring(1)
-  fetchSubreddit(sr)
-})
+const tabOptions = {
+  onShow: function (e) {
+    const sr = e.id
+    fetchSubreddit(sr)
+  }
+}
+M.Tabs.init(navList, tabOptions)
 
 fetchSubreddit(srList[0])
 
