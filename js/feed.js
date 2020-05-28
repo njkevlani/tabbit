@@ -1,5 +1,31 @@
 import { curFocused, focusList } from './nav.js'
 
+function timeSince (date) {
+  var seconds = Math.floor((new Date() - date) / 1000)
+  var interval = Math.floor(seconds / 31536000)
+
+  if (interval >= 1) {
+    return interval + 'Y'
+  }
+  interval = Math.floor(seconds / 2592000)
+  if (interval >= 1) {
+    return interval + 'M'
+  }
+  interval = Math.floor(seconds / 86400)
+  if (interval >= 1) {
+    return interval + 'D'
+  }
+  interval = Math.floor(seconds / 3600)
+  if (interval >= 1) {
+    return interval + 'H'
+  }
+  interval = Math.floor(seconds / 60)
+  if (interval >= 1) {
+    return interval + 'M'
+  }
+  return Math.floor(seconds) + 'S'
+}
+
 function fetchSubreddit (sr) {
   window.fetch(`https://www.reddit.com/r/${sr}.json`)
     .then((response) => response.json())
@@ -24,13 +50,20 @@ function fetchSubreddit (sr) {
 
         const s = document.createElement('td')
         s.classList.add('feedData')
+        s.classList.add('singleLine')
         if (p.score > 999) {
           s.innerText = `${(p.score / 1000).toFixed(2)}K `
         } else {
           s.innerText = `${p.score} `
         }
 
+        const t = document.createElement('td')
+        t.classList.add('feedData')
+        t.classList.add('singleLine')
+        t.innerText = timeSince(new Date(p.created_utc * 1000))
+
         const listElement = document.createElement('tr')
+        listElement.appendChild(t)
         listElement.appendChild(s)
         listElement.appendChild(atd)
 
