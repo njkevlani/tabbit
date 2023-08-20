@@ -27,7 +27,7 @@ function timeSince (date) {
 }
 
 function fetchSubreddit (sr) {
-  window.fetch(`https://www.reddit.com/r/${sr}/top.json`)
+  window.fetch(`https://www.reddit.com/r/${sr}/hot.json`)
     .then((response) => response.json())
     .then((data) => {
       const lst = document.getElementById(sr).getElementsByTagName('tbody')[0]
