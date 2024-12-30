@@ -1,6 +1,8 @@
 import { fetchSubreddit } from './feed.js'
 
-const srList = [
+// For storing srList in local storage, run this in console:
+// localStorage.setItem('srList', JSON.stringify(["all", "programming", "linux"]))
+const srList = localStorage.getItem('srList') ? JSON.parse(localStorage.getItem('srList')) : [
   'all',
   'programming',
   'golang',
