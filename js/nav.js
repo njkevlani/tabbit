@@ -1,24 +1,8 @@
 import { fetchSubreddit } from './feed.js'
+import { defaultSrList } from './config.js'
 
 // For storing srList in local storage, run this in console:
-// localStorage.setItem('srList', JSON.stringify(["all", "programming", "linux"]))
-const srList = localStorage.getItem('srList') ? JSON.parse(localStorage.getItem('srList')) : [
-  'all',
-  'programming',
-  'golang',
-  'rust',
-  'python',
-  'india',
-  'bangalore',
-  'battlestations',
-  'battletops',
-  'archlinux',
-  'linux',
-  'thinkpad',
-  'unixporn',
-  'vim',
-  'xfce'
-]
+const srList = JSON.parse(localStorage.getItem('srList')) || defaultSrList;
 
 const M = window.M
 

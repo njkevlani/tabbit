@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customize Subreddit List</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    ul { list-style: none; padding: 0; }
+    li {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px; margin-bottom: 8px; background: #f4f4f4; 
+      cursor: grab; border-radius: 5px;
+    }
+    li.dragging { opacity: 0.5; }
+    button { margin-left: 10px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <a href="index.html" id="back-button">⬅ Back to Home</a>
+
+    <h2>Customize Subreddit List (Drag to Reorder)</h2>
+
+    <ul id="srList"></ul>
+
+    <input type="text" id="newSubreddit" placeholder="Enter subreddit name">
+
+    <script type="module" src="js/settings.js"></script>
+  </body>
+</html>
