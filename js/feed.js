@@ -38,7 +38,7 @@ function fetchSubreddit (sr) {
 
         const a = document.createElement('a')
         a.setAttribute('href', `https://www.reddit.com${p.permalink}`)
-        a.innerText = p.title
+        a.innerHTML = p.title
 
         postFocusList.push({
           anchor: a
