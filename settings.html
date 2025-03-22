@@ -6,6 +6,7 @@
     <title>Customize Subreddit List</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
+    input, button { font: inherit; }
     body { font-family: Arial, sans-serif; margin: 20px; }
     ul { list-style: none; padding: 0; }
     li {
@@ -14,7 +15,7 @@
       cursor: grab; border-radius: 5px;
     }
     li.dragging { opacity: 0.5; }
-    button { margin-left: 10px; cursor: pointer; }
+    button { cursor: pointer; }
     </style>
   </head>
   <body>
@@ -24,7 +25,9 @@
 
     <ul id="srList"></ul>
 
-    <input type="text" id="newSubreddit" placeholder="Enter subreddit name">
+    <div id="user-input">
+      <input type="text" id="newSubreddit" placeholder="Enter subreddit name">
+    </div>
 
     <script type="module" src="js/settings.js"></script>
   </body>

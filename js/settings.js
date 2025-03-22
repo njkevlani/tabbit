@@ -96,7 +96,7 @@ function placeAddButton() {
   let addBtn = document.createElement('button');
   addBtn.textContent = 'Add';
   addBtn.onclick = () => addSubreddit();
-  document.body.appendChild(addBtn);
+  document.getElementById('user-input').appendChild(addBtn);
 }
 
 function placeResetButton() {
