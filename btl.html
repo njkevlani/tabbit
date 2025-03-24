@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Hot Posts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: flex-start;
+            background: #f4f4f4;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .bottom-nav {
+            display: flex;
+            overflow-x: auto;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #fff;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            padding: 10px 0;
+            white-space: nowrap;
+        }
+
+        .nav-item {
+            flex: 0 0 auto;
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .nav-item.active {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        /* Hide scrollbar */
+        .bottom-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .post {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .post a {
+            font-size: 16px;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .post a:hover {
+            text-decoration: underline;
+        }
+
+        .post-info {
+            font-size: 12px;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="content" id="content">Loading...</div>
+
+    <div class="bottom-nav" id="navBar"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const navBar = document.getElementById("navBar");
+            const content = document.getElementById("content");
+
+            // Default subreddit list if localStorage is empty
+            const defaultSubreddits = ["Home", "news", "technology", "science", "gaming", "movies", "sports"];
+
+            // Get subreddit list from localStorage
+            let srList = JSON.parse(localStorage.getItem("srList"));
+
+            // If srList is absent, set default value
+            if (!srList || !Array.isArray(srList) || srList.length === 0) {
+                srList = defaultSubreddits;
+                localStorage.setItem("srList", JSON.stringify(srList));
+            }
+
+            // Function to fetch and display posts
+            async function fetchPosts(subreddit) {
+                content.innerHTML = "Loading...";
+
+                let url = subreddit === "Home"
+                    ? "https://www.reddit.com/hot.json"
+                    : `https://www.reddit.com/${subreddit}/hot.json`;
+
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    const posts = data.data.children;
+
+                    if (posts.length === 0) {
+                        content.innerHTML = `<p>No posts found.</p>`;
+                        return;
+                    }
+
+                    content.innerHTML = "";
+                    posts.forEach(post => {
+                        const { title, score, permalink, created_utc } = post.data;
+                        const postElement = document.createElement("div");
+                        postElement.classList.add("post");
+
+                        const postTime = new Date(created_utc * 1000);
+                        const timeDiff = Math.floor((Date.now() - postTime) / (1000 * 60 * 60));
+                        const timeAgo = timeDiff < 24 ? `${timeDiff} hours ago` : `${Math.floor(timeDiff / 24)} days ago`;
+
+                        postElement.innerHTML = `
+                            <a href="https://www.reddit.com${permalink}" target="_blank">${title}</a>
+                            <div class="post-info">Score: ${score} | ${timeAgo}</div>
+                        `;
+                        content.appendChild(postElement);
+                    });
+
+                } catch (error) {
+                    content.innerHTML = `<p>Error loading posts. Please try again.</p>`;
+                }
+            }
+
+            // Populate navigation tabs dynamically
+            srList.forEach((subreddit, index) => {
+                const tab = document.createElement("div");
+                tab.classList.add("nav-item");
+                if (index === 0) tab.classList.add("active"); // Make first tab active
+                tab.textContent = subreddit;
+                tab.setAttribute("data-content", subreddit);
+
+                tab.addEventListener("click", function () {
+                    document.querySelectorAll(".nav-item").forEach(nav => nav.classList.remove("active"));
+                    this.classList.add("active");
+                    fetchPosts(subreddit);
+                });
+
+                navBar.appendChild(tab);
+            });
+
+            // Fetch posts for the first tab
+            fetchPosts(srList[0]);
+        });
+    </script>
+
+</body>
+</html>
