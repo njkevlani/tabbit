@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Reddit Hot Posts</title>
     <style>
         * {
@@ -82,6 +82,107 @@
             color: #555;
             margin-top: 5px;
         }
+
+        /* Manage Subreddits Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 320px;
+            z-index: 1000;
+        }
+
+        .modal h3 {
+            margin-bottom: 10px;
+        }
+
+        .subreddit-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .subreddit-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .subreddit-item input {
+            flex: 1;
+            padding: 5px;
+            margin-right: 5px;
+            font: inherit;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        .remove-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        #btn-save, #btn-add {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px;
+            width: 100%;
+            margin-top: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #btn-cancel {
+            background: #ccc;
+            color: black;
+            border: none;
+            padding: 8px;
+            width: 100%;
+            margin-top: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .manage-btn {
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            font-size: 16px;
+            position: fixed;
+            bottom: 50px;
+            right: 20px;
+            border-radius: 5px;
+        }
+
+        .move-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .move-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -90,68 +191,87 @@
 
     <div class="bottom-nav" id="navBar"></div>
 
+    <div class="manage-btn" id="settings-btn" onclick="openModal()">Manage Subreddits</div>
+
+    <!-- Modal for Editing Subreddits -->
+    <div class="modal" id="modal">
+        <h3>Edit Subreddits</h3>
+        <div class="subreddit-list" id="subredditList"></div>
+        <button id="btn-add" onclick="addSubreddit()">+ Add Subreddit</button>
+        <button id="btn-save" onclick="saveSubreddits()">Save</button>
+        <button id="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
+        const defaultSubreddits = ["Home", "news", "technology", "science", "gaming", "movies", "sports"];
+        let srList = JSON.parse(localStorage.getItem("srList")) || defaultSubreddits;
+        localStorage.setItem("srList", JSON.stringify(srList));
+
+        function moveSubreddit(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= srList.length) return; // Prevent moving out of bounds
+
+            // Swap subreddits in the list
+            [srList[index], srList[newIndex]] = [srList[newIndex], srList[index]];
+
+            openModal(); // Refresh the modal to reflect changes
+        }
+
+        function openModal() {
+            const list = document.getElementById("subredditList");
+            list.innerHTML = srList.map((sub, i) => `
+                <div class="subreddit-item">
+                    <input type="text" value="${sub}" data-index="${i}">
+                    <button class="remove-btn" onclick="removeSubreddit(${i})">X</button>
+                    <button class="move-btn" onclick="moveSubreddit(${i}, -1)" ${i === 0 ? 'disabled' : ''}>⬆️</button>
+                    <button class="move-btn" onclick="moveSubreddit(${i}, 1)" ${i === srList.length - 1 ? 'disabled' : ''}>⬇️</button>
+                </div>
+            `).join('');
+            document.getElementById("modal").style.display = "block";
+        }
+
+        function addSubreddit() {
+            // Capture existing input values before modifying srList
+            const inputs = document.querySelectorAll(".subreddit-item input");
+            srList = Array.from(inputs).map(input => input.value.trim());
+
+            // Add a new empty subreddit only if the last one is not empty
+            if (srList.length === 0 || srList[srList.length - 1] !== "") {
+                srList.push(""); // Append a new empty entry
+            }
+
+            openModal(); // Refresh the modal with preserved inputs
+
+            const newInputs = document.querySelectorAll(".subreddit-item input");
+            if (newInputs.length > 0) {
+                newInputs[newInputs.length - 1].focus();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+
+        function saveSubreddits() {
+            srList = [...document.querySelectorAll(".subreddit-item input")].map(i => i.value.trim()).filter(Boolean);
+            localStorage.setItem("srList", JSON.stringify(srList));
+            closeModal();
+            populateTabs();
+        }
+
+        function removeSubreddit(index) {
+            srList.splice(index, 1);
+            openModal();
+        }
+
+        function populateTabs() {
             const navBar = document.getElementById("navBar");
-            const content = document.getElementById("content");
 
-            // Default subreddit list if localStorage is empty
-            const defaultSubreddits = ["Home", "news", "technology", "science", "gaming", "movies", "sports"];
-
-            // Get subreddit list from localStorage
-            let srList = JSON.parse(localStorage.getItem("srList"));
-
-            // If srList is absent, set default value
-            if (!srList || !Array.isArray(srList) || srList.length === 0) {
-                srList = defaultSubreddits;
-                localStorage.setItem("srList", JSON.stringify(srList));
-            }
-
-            // Function to fetch and display posts
-            async function fetchPosts(subreddit) {
-                content.innerHTML = "Loading...";
-
-                let url = subreddit === "Home"
-                    ? "https://www.reddit.com/hot.json"
-                    : `https://www.reddit.com/r/${subreddit}/hot.json`;
-
-                try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    const posts = data.data.children;
-
-                    if (posts.length === 0) {
-                        content.innerHTML = `<p>No posts found.</p>`;
-                        return;
-                    }
-
-                    content.innerHTML = "";
-                    posts.forEach(post => {
-                        const { title, score, permalink, created_utc } = post.data;
-                        const postElement = document.createElement("div");
-                        postElement.classList.add("post");
-
-                        const postTime = new Date(created_utc * 1000);
-                        const timeDiff = Math.floor((Date.now() - postTime) / (1000 * 60 * 60));
-                        const timeAgo = timeDiff < 24 ? `${timeDiff} hours ago` : `${Math.floor(timeDiff / 24)} days ago`;
-
-                        postElement.innerHTML = `
-                            <a href="https://www.reddit.com${permalink}" target="_blank">${title}</a>
-                            <div class="post-info">Score: ${score} | ${timeAgo}</div>
-                        `;
-                        content.appendChild(postElement);
-                    });
-
-                } catch (error) {
-                    content.innerHTML = `<p>Error loading posts. Please try again.</p>`;
-                }
-            }
-
-            // Populate navigation tabs dynamically
+            navBar.innerHTML = "";
             srList.forEach((subreddit, index) => {
                 const tab = document.createElement("div");
                 tab.classList.add("nav-item");
-                if (index === 0) tab.classList.add("active"); // Make first tab active
+                if (index === 0) tab.classList.add("active");
                 tab.textContent = subreddit;
                 tab.setAttribute("data-content", subreddit);
 
@@ -164,8 +284,35 @@
                 navBar.appendChild(tab);
             });
 
-            // Fetch posts for the first tab
             fetchPosts(srList[0]);
+        }
+
+        async function fetchPosts(subreddit) {
+            const content = document.getElementById("content");
+
+            content.innerHTML = "Loading...";
+            let url = subreddit === "Home"
+                ? "https://www.reddit.com/hot.json"
+                : `https://www.reddit.com/r/${subreddit}/hot.json`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const posts = data.data.children;
+
+                content.innerHTML = posts.map(post => `
+                    <div class="post">
+                        <a href="https://www.reddit.com${post.data.permalink}" target="_blank">${post.data.title}</a>
+                        <div class="post-info">Score: ${post.data.score} | ${new Date(post.data.created_utc * 1000).toLocaleString()}</div>
+                    </div>
+                `).join('');
+            } catch {
+                content.innerHTML = `<p>Error loading posts.</p>`;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            populateTabs();
         });
     </script>
 
