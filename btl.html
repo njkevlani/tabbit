@@ -203,6 +203,7 @@
     </div>
 
     <script>
+        const cache = {}; // Store preloaded data
         const defaultSubreddits = ["Home", "news", "technology", "science", "gaming", "movies", "sports"];
         let srList = JSON.parse(localStorage.getItem("srList")) || defaultSubreddits;
         localStorage.setItem("srList", JSON.stringify(srList));
@@ -291,6 +292,16 @@
             const content = document.getElementById("content");
 
             content.innerHTML = "Loading...";
+
+            if (cache[subreddit]) {
+                console.log("cache hit");
+                // Prefetch next subreddit
+                prefetchNextSubreddit(subreddit);
+
+                renderPosts(cache[subreddit]);
+                return;
+            }
+
             let url = subreddit === "Home"
                 ? "https://www.reddit.com/hot.json"
                 : `https://www.reddit.com/r/${subreddit}/hot.json`;
@@ -300,19 +311,47 @@
                 const data = await response.json();
                 const posts = data.data.children;
 
-                content.innerHTML = posts.map(post => {
-                    const postTime = new Date(post.data.created_utc * 1000);
-                    const timeDiff = Math.floor((Date.now() - postTime) / (1000 * 60 * 60));
-                    const timeAgo = timeDiff < 24 ? `${timeDiff} hours ago` : `${Math.floor(timeDiff / 24)} days ago`;
+                renderPosts(posts)
 
-                    return `<div class="post">
-                        <a href="https://www.reddit.com${post.data.permalink}" target="_blank">${post.data.title}</a>
-                        <div class="post-info">Score: ${post.data.score} | ${timeAgo}</div>
-                    </div>`
-                }).join('');
+                // Prefetch next subreddit
+                prefetchNextSubreddit(subreddit);
             } catch (error) {
                 console.log(error)
                 content.innerHTML = `<p>Error loading posts.</p>`;
+            }
+        }
+
+        function renderPosts(posts) {
+            const content = document.getElementById("content");
+            content.innerHTML = posts.map(post => {
+                const postTime = new Date(post.data.created_utc * 1000);
+                const timeDiff = Math.floor((Date.now() - postTime) / (1000 * 60 * 60));
+                const timeAgo = timeDiff < 24 ? `${timeDiff} hours ago` : `${Math.floor(timeDiff / 24)} days ago`;
+
+                return `<div class="post">
+                    <a href="https://www.reddit.com${post.data.permalink}" target="_blank">${post.data.title}</a>
+                    <div class="post-info">Score: ${post.data.score} | ${timeAgo}</div>
+                </div>`
+            }).join('');
+        }
+
+        function prefetchNextSubreddit(currentSubreddit) {
+            const currentIndex = srList.indexOf(currentSubreddit);
+            if (currentIndex === srList.length - 1) return; // No next subreddit to prefetch
+
+            const nextSubreddit = srList[currentIndex + 1];
+
+            if (!cache[nextSubreddit]) {
+                let url = nextSubreddit === "Home"
+                    ? "https://www.reddit.com/hot.json"
+                    : `https://www.reddit.com/r/${nextSubreddit}/hot.json`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        cache[nextSubreddit] = data.data.children;
+                    })
+                    .catch(() => console.warn(`Prefetch failed for ${nextSubreddit}`));
             }
         }
 
