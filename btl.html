@@ -113,7 +113,7 @@
 
                 let url = subreddit === "Home"
                     ? "https://www.reddit.com/hot.json"
-                    : `https://www.reddit.com/${subreddit}/hot.json`;
+                    : `https://www.reddit.com/r/${subreddit}/hot.json`;
 
                 try {
                     const response = await fetch(url);
