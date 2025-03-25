@@ -289,6 +289,9 @@
         }
 
         async function fetchPosts(subreddit) {
+            // Reset scroll position to top
+            window.scrollTo(0, 0);
+
             const content = document.getElementById("content");
 
             content.innerHTML = "Loading...";
