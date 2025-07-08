@@ -77,6 +77,11 @@
             text-decoration: underline;
         }
 
+        .post.selected {
+            background: #e6f0ff;
+            outline: 2px solid #007bff;
+        }
+
         .post-info {
             font-size: 12px;
             color: #555;
@@ -203,6 +208,9 @@
     </div>
 
     <script>
+        let selectedPostIndex = -1;
+        let selectedSubredditIndex = 0;
+
         const cache = {}; // Store preloaded data
         const defaultSubreddits = ["Home", "news", "technology", "science", "gaming", "movies", "sports"];
         let srList = JSON.parse(localStorage.getItem("srList")) || defaultSubreddits;
@@ -266,6 +274,8 @@
         }
 
         function populateTabs() {
+            selectedSubredditIndex = 0;
+
             const navBar = document.getElementById("navBar");
 
             navBar.innerHTML = "";
@@ -324,6 +334,8 @@
         }
 
         function renderPosts(posts) {
+            selectedPostIndex = 0;
+
             const content = document.getElementById("content");
             content.innerHTML = posts.map(post => {
                 const postTime = new Date(post.data.created_utc * 1000);
@@ -360,6 +372,56 @@
         document.addEventListener("DOMContentLoaded", function () {
             populateTabs();
         });
+
+        document.addEventListener("keydown", function (e) {
+            const posts = document.querySelectorAll(".post");
+            const subreddits = document.querySelectorAll(".nav-item");
+
+            if (["j", "k", "h", "l", "Enter"].includes(e.key)) {
+                e.preventDefault(); // prevent scrolling or default behavior
+            }
+
+            if (e.key === "j") {
+                if (selectedPostIndex < posts.length - 1) {
+                    selectedPostIndex++;
+                    updatePostHighlight(posts);
+                }
+            }
+
+            if (e.key === "k") {
+                if (selectedPostIndex > 0) {
+                    selectedPostIndex--;
+                    updatePostHighlight(posts);
+                }
+            }
+
+            if (e.key === "Enter" && posts[selectedPostIndex]) {
+                window.open(posts[selectedPostIndex].getElementsByTagName('a')[0].href, "_blank");
+            }
+
+            if (e.key === "l") {
+                if (selectedSubredditIndex < srList.length - 1) {
+                    selectedSubredditIndex++;
+                    subreddits[selectedSubredditIndex].click();
+                }
+            }
+
+            if (e.key === "h") {
+                if (selectedSubredditIndex > 0) {
+                    selectedSubredditIndex--;
+                    subreddits[selectedSubredditIndex].click();
+                }
+            }
+        });
+
+        function updatePostHighlight(posts) {
+            posts.forEach(post => post.classList.remove("selected"));
+            const selected = posts[selectedPostIndex];
+            if (selected) {
+                selected.classList.add("selected");
+                selected.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        }
     </script>
 
 </body>
