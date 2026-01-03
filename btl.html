@@ -319,7 +319,7 @@
                 prefetchNextSubreddit(subreddit);
             } catch (error) {
                 console.log(error)
-                content.innerHTML = `<p>Error loading posts.</p>`;
+                content.innerHTML = `<p>Error loading posts, error = ${error}</p>`;
             }
         }
 
