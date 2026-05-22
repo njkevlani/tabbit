@@ -134,7 +134,7 @@
             border-radius: 3px;
         }
 
-        #btn-save, #btn-add {
+        #btn-save, #btn-add, #btn-feed-save {
             background: #007bff;
             color: white;
             border: none;
@@ -145,7 +145,7 @@
             border-radius: 5px;
         }
 
-        #btn-cancel {
+        #btn-cancel, #btn-feed-cancel {
             background: #ccc;
             color: black;
             border: none;
@@ -156,7 +156,7 @@
             border-radius: 5px;
         }
 
-        .manage-btn {
+        .manage-btn, .feed-btn {
             text-align: center;
             padding: 10px;
             cursor: pointer;
@@ -164,9 +164,21 @@
             color: white;
             font-size: 16px;
             position: fixed;
-            bottom: 50px;
             right: 20px;
             border-radius: 5px;
+        }
+
+        .manage-btn {
+            bottom: 50px;
+        }
+
+        .feed-btn {
+            bottom: 100px;
+        }
+
+        .feed-option {
+            display: block;
+            margin: 8px 0;
         }
 
         .move-btn {
@@ -191,7 +203,21 @@
 
     <div class="bottom-nav" id="navBar"></div>
 
+    <div class="feed-btn" id="feed-btn" onclick="openFeedModal()"></div>
     <div class="manage-btn" id="settings-btn" onclick="openModal()">Manage Subreddits</div>
+
+    <!-- Modal for Feed Type -->
+    <div class="modal" id="feedModal">
+        <h3>Select Feed Type</h3>
+        <label class="feed-option"><input type="radio" name="feedType" value="hot"> Hot</label>
+        <label class="feed-option"><input type="radio" name="feedType" value="top:day"> Top - Today</label>
+        <label class="feed-option"><input type="radio" name="feedType" value="top:week"> Top - This Week</label>
+        <label class="feed-option"><input type="radio" name="feedType" value="top:month"> Top - This Month</label>
+        <label class="feed-option"><input type="radio" name="feedType" value="top:year"> Top - This Year</label>
+        <label class="feed-option"><input type="radio" name="feedType" value="top:all"> Top - All Time</label>
+        <button id="btn-feed-save" onclick="saveFeedType()">Save</button>
+        <button id="btn-feed-cancel" onclick="closeFeedModal()">Cancel</button>
+    </div>
 
     <!-- Modal for Editing Subreddits -->
     <div class="modal" id="modal">
@@ -205,8 +231,65 @@
     <script>
         const cache = {}; // Store preloaded data
         const defaultSubreddits = ["Home", "news", "technology", "science", "gaming", "movies", "sports"];
+        const feedLabels = {
+            hot: "Hot",
+            "top:day": "Top - Today",
+            "top:week": "Top - This Week",
+            "top:month": "Top - This Month",
+            "top:year": "Top - This Year",
+            "top:all": "Top - All Time"
+        };
         let srList = JSON.parse(localStorage.getItem("srList")) || defaultSubreddits;
+        let currentFeed = localStorage.getItem("feedType") || "hot";
+        if (!feedLabels[currentFeed]) currentFeed = "hot";
         localStorage.setItem("srList", JSON.stringify(srList));
+
+        function getActiveSubreddit() {
+            const activeTab = document.querySelector(".nav-item.active");
+            return activeTab ? activeTab.getAttribute("data-content") : srList[0];
+        }
+
+        function getCacheKey(subreddit) {
+            return `${currentFeed}:${subreddit}`;
+        }
+
+        function getFeedUrl(subreddit) {
+            const baseUrl = subreddit === "Home"
+                ? "https://www.reddit.com"
+                : `https://www.reddit.com/r/${subreddit}`;
+
+            if (currentFeed === "hot") {
+                return `${baseUrl}/hot.json`;
+            }
+
+            const [, topPeriod] = currentFeed.split(":");
+            return `${baseUrl}/top.json?t=${topPeriod}`;
+        }
+
+        function updateFeedButton() {
+            document.getElementById("feed-btn").textContent = `Feed: ${feedLabels[currentFeed] || "Hot"}`;
+        }
+
+        function openFeedModal() {
+            const selected = document.querySelector(`input[name="feedType"][value="${currentFeed}"]`);
+            if (selected) selected.checked = true;
+            document.getElementById("feedModal").style.display = "block";
+        }
+
+        function closeFeedModal() {
+            document.getElementById("feedModal").style.display = "none";
+        }
+
+        function saveFeedType() {
+            const selected = document.querySelector('input[name="feedType"]:checked');
+            if (!selected) return;
+
+            currentFeed = selected.value;
+            localStorage.setItem("feedType", currentFeed);
+            updateFeedButton();
+            closeFeedModal();
+            fetchPosts(getActiveSubreddit());
+        }
 
         function moveSubreddit(index, direction) {
             const newIndex = index + direction;
@@ -296,23 +379,23 @@
 
             content.innerHTML = "Loading...";
 
-            if (cache[subreddit]) {
+            const cacheKey = getCacheKey(subreddit);
+            if (cache[cacheKey]) {
                 // Prefetch next subreddit
                 prefetchNextSubreddit(subreddit);
 
-                renderPosts(cache[subreddit]);
+                renderPosts(cache[cacheKey]);
                 return;
             }
 
-            let url = subreddit === "Home"
-                ? "https://www.reddit.com/hot.json"
-                : `https://www.reddit.com/r/${subreddit}/hot.json`;
+            let url = getFeedUrl(subreddit);
 
             try {
                 const response = await fetch(url);
                 const data = await response.json();
                 const posts = data.data.children;
 
+                cache[cacheKey] = posts;
                 renderPosts(posts)
 
                 // Prefetch next subreddit
@@ -343,21 +426,21 @@
 
             const nextSubreddit = srList[currentIndex + 1];
 
-            if (!cache[nextSubreddit]) {
-                let url = nextSubreddit === "Home"
-                    ? "https://www.reddit.com/hot.json"
-                    : `https://www.reddit.com/r/${nextSubreddit}/hot.json`;
+            const cacheKey = getCacheKey(nextSubreddit);
+            if (!cache[cacheKey]) {
+                let url = getFeedUrl(nextSubreddit);
 
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {
-                        cache[nextSubreddit] = data.data.children;
+                        cache[cacheKey] = data.data.children;
                     })
                     .catch(() => console.warn(`Prefetch failed for ${nextSubreddit}`));
             }
         }
 
         document.addEventListener("DOMContentLoaded", function () {
+            updateFeedButton();
             populateTabs();
         });
     </script>
