@@ -156,6 +156,35 @@
             border-radius: 5px;
         }
 
+        .settings-menu {
+            position: fixed;
+            right: 20px;
+            bottom: 50px;
+            z-index: 900;
+        }
+
+        .settings-cog {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: #007bff;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .settings-cog img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .settings-menu.open .settings-cog {
+            transform: rotate(90deg);
+        }
+
         .manage-btn, .feed-btn {
             text-align: center;
             padding: 10px;
@@ -163,17 +192,33 @@
             background: #007bff;
             color: white;
             font-size: 16px;
-            position: fixed;
-            right: 20px;
+            position: absolute;
+            right: 0;
+            min-width: 170px;
             border-radius: 5px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
         .manage-btn {
-            bottom: 50px;
+            bottom: 58px;
         }
 
         .feed-btn {
-            bottom: 100px;
+            bottom: 108px;
+        }
+
+        .settings-menu.open .manage-btn,
+        .settings-menu.open .feed-btn {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .settings-menu.open .feed-btn {
+            transition-delay: 0.05s;
         }
 
         .feed-option {
@@ -203,8 +248,13 @@
 
     <div class="bottom-nav" id="navBar"></div>
 
-    <div class="feed-btn" id="feed-btn" onclick="openFeedModal()"></div>
-    <div class="manage-btn" id="settings-btn" onclick="openModal()">Manage Subreddits</div>
+    <div class="settings-menu" id="settingsMenu">
+        <div class="feed-btn" id="feed-btn" onclick="openFeedModal()"></div>
+        <div class="manage-btn" id="settings-btn" onclick="openModal()">Manage Subreddits</div>
+        <div class="settings-cog" onclick="toggleSettingsMenu()">
+            <img src="icons/cog.svg" alt="Settings">
+        </div>
+    </div>
 
     <!-- Modal for Feed Type -->
     <div class="modal" id="feedModal">
@@ -244,6 +294,14 @@
         if (!feedLabels[currentFeed]) currentFeed = "hot";
         localStorage.setItem("srList", JSON.stringify(srList));
 
+        function toggleSettingsMenu() {
+            document.getElementById("settingsMenu").classList.toggle("open");
+        }
+
+        function closeSettingsMenu() {
+            document.getElementById("settingsMenu").classList.remove("open");
+        }
+
         function getActiveSubreddit() {
             const activeTab = document.querySelector(".nav-item.active");
             return activeTab ? activeTab.getAttribute("data-content") : srList[0];
@@ -271,6 +329,7 @@
         }
 
         function openFeedModal() {
+            closeSettingsMenu();
             const selected = document.querySelector(`input[name="feedType"][value="${currentFeed}"]`);
             if (selected) selected.checked = true;
             document.getElementById("feedModal").style.display = "block";
@@ -302,6 +361,7 @@
         }
 
         function openModal() {
+            closeSettingsMenu();
             const list = document.getElementById("subredditList");
             list.innerHTML = srList.map((sub, i) => `
                 <div class="subreddit-item">
