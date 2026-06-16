@@ -134,7 +134,7 @@
             border-radius: 3px;
         }
 
-        #btn-save, #btn-add, #btn-feed-save {
+        #btn-save, #btn-add, #btn-feed-save, #btn-creds-save {
             background: #007bff;
             color: white;
             border: none;
@@ -145,7 +145,7 @@
             border-radius: 5px;
         }
 
-        #btn-cancel, #btn-feed-cancel {
+        #btn-cancel, #btn-feed-cancel, #btn-creds-cancel {
             background: #ccc;
             color: black;
             border: none;
@@ -154,6 +154,14 @@
             margin-top: 5px;
             cursor: pointer;
             border-radius: 5px;
+        }
+
+        .credentials-form input {
+            width: 100%;
+            padding: 6px;
+            font: inherit;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
 
         .settings-menu {
@@ -185,7 +193,7 @@
             transform: rotate(90deg);
         }
 
-        .manage-btn, .feed-btn {
+        .manage-btn, .feed-btn, .credentials-btn {
             text-align: center;
             padding: 10px;
             cursor: pointer;
@@ -194,7 +202,7 @@
             font-size: 16px;
             position: absolute;
             right: 0;
-            min-width: 170px;
+            min-width: 180px;
             border-radius: 5px;
             opacity: 0;
             pointer-events: none;
@@ -210,8 +218,13 @@
             bottom: 108px;
         }
 
+        .credentials-btn {
+            bottom: 158px;
+        }
+
         .settings-menu.open .manage-btn,
-        .settings-menu.open .feed-btn {
+        .settings-menu.open .feed-btn,
+        .settings-menu.open .credentials-btn {
             opacity: 1;
             pointer-events: auto;
             transform: translateY(0);
@@ -219,6 +232,10 @@
 
         .settings-menu.open .feed-btn {
             transition-delay: 0.05s;
+        }
+
+        .settings-menu.open .credentials-btn {
+            transition-delay: 0.1s;
         }
 
         .feed-option {
@@ -249,11 +266,32 @@
     <div class="bottom-nav" id="navBar"></div>
 
     <div class="settings-menu" id="settingsMenu">
+        <div class="credentials-btn" id="credentials-btn" onclick="openCredentialsModal()">API Credentials</div>
         <div class="feed-btn" id="feed-btn" onclick="openFeedModal()"></div>
         <div class="manage-btn" id="settings-btn" onclick="openModal()">Manage Subreddits</div>
         <div class="settings-cog" onclick="toggleSettingsMenu()">
             <img src="icons/cog.svg" alt="Settings">
         </div>
+    </div>
+
+    <!-- Modal for Reddit API Credentials -->
+    <div class="modal" id="credentialsModal">
+        <h3 style="margin-bottom: 8px;">Reddit API Credentials</h3>
+        <p style="font-size: 11px; color: #666; margin-bottom: 12px; line-height: 1.4;">
+            Configure Reddit API access. Leave fields empty to browse anonymously (rate-limited).
+        </p>
+        <div class="credentials-form">
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; font-size: 13px; margin-bottom: 3px; font-weight: bold;">Client ID</label>
+                <input type="text" id="reddit-client-id" placeholder="e.g. 14-char ID">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-size: 13px; margin-bottom: 3px; font-weight: bold;">Client Secret (optional)</label>
+                <input type="password" id="reddit-client-secret" placeholder="e.g. 27-char Secret">
+            </div>
+        </div>
+        <button id="btn-creds-save" onclick="saveCredentials()">Save</button>
+        <button id="btn-creds-cancel" onclick="closeCredentialsModal()">Cancel</button>
     </div>
 
     <!-- Modal for Feed Type -->
@@ -311,13 +349,111 @@
             return `${currentFeed}:${subreddit}`;
         }
 
-        function getFeedUrl(subreddit) {
+        async function getAccessToken() {
+            const clientId = localStorage.getItem("redditClientId");
+            const clientSecret = localStorage.getItem("redditClientSecret");
+            if (!clientId || !clientSecret) return null;
+
+            const cachedToken = localStorage.getItem("redditAccessToken");
+            const expiry = localStorage.getItem("redditTokenExpiry");
+
+            if (cachedToken && expiry && Date.now() < parseInt(expiry, 10)) {
+                return cachedToken;
+            }
+
+            const bodyParams = new URLSearchParams();
+            bodyParams.append("grant_type", "client_credentials");
+
+            const headers = {
+                "Authorization": "Basic " + btoa(clientId + ":" + clientSecret),
+                "Content-Type": "application/x-www-form-urlencoded"
+            };
+
+            const response = await fetch("https://www.reddit.com/api/v1/access_token", {
+                method: "POST",
+                headers: headers,
+                body: bodyParams
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch access token: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(`Reddit API Error: ${data.error_description || data.error}`);
+            }
+
+            if (data.access_token) {
+                const expiresInMs = (data.expires_in || 3600) * 1000;
+                localStorage.setItem("redditAccessToken", data.access_token);
+                localStorage.setItem("redditTokenExpiry", (Date.now() + expiresInMs - 50000).toString());
+                return data.access_token;
+            }
+
+            throw new Error("No access token returned from Reddit");
+        }
+
+        function updateCredentialsButton() {
+            const clientId = localStorage.getItem("redditClientId");
+            const clientSecret = localStorage.getItem("redditClientSecret");
+            const btn = document.getElementById("credentials-btn");
+            if (btn) {
+                if (clientId && clientSecret) {
+                    btn.textContent = "API: Configured";
+                    btn.style.background = "#28a745";
+                } else {
+                    btn.textContent = "API: Anonymous";
+                    btn.style.background = "#007bff";
+                }
+            }
+        }
+
+        function openCredentialsModal() {
+            closeSettingsMenu();
+            document.getElementById("reddit-client-id").value = localStorage.getItem("redditClientId") || "";
+            document.getElementById("reddit-client-secret").value = localStorage.getItem("redditClientSecret") || "";
+            document.getElementById("credentialsModal").style.display = "block";
+        }
+
+        function closeCredentialsModal() {
+            document.getElementById("credentialsModal").style.display = "none";
+        }
+
+        function saveCredentials() {
+            const clientId = document.getElementById("reddit-client-id").value.trim();
+            const clientSecret = document.getElementById("reddit-client-secret").value.trim();
+
+            if (clientId && clientSecret) {
+                localStorage.setItem("redditClientId", clientId);
+                localStorage.setItem("redditClientSecret", clientSecret);
+            } else {
+                localStorage.removeItem("redditClientId");
+                localStorage.removeItem("redditClientSecret");
+                localStorage.removeItem("redditAccessToken");
+                localStorage.removeItem("redditTokenExpiry");
+            }
+
+            localStorage.removeItem("redditAccessToken");
+            localStorage.removeItem("redditTokenExpiry");
+
+            updateCredentialsButton();
+            closeCredentialsModal();
+            fetchPosts(getActiveSubreddit());
+        }
+
+        function getFeedUrl(subreddit, useOAuth) {
+            const domain = useOAuth ? "https://oauth.reddit.com" : "https://www.reddit.com";
             const baseUrl = subreddit === "Home"
-                ? "https://www.reddit.com"
-                : `https://www.reddit.com/r/${subreddit}`;
+                ? domain
+                : `${domain}/r/${subreddit}`;
 
             if (currentFeed === "hot") {
                 return `${baseUrl}/hot.json`;
+            }
+
+            if (currentFeed === "new") {
+                return `${baseUrl}/new.json`;
             }
 
             const [, topPeriod] = currentFeed.split(":");
@@ -448,10 +584,17 @@
                 return;
             }
 
-            let url = getFeedUrl(subreddit);
-
             try {
-                const response = await fetch(url);
+                const token = await getAccessToken();
+                const useOAuth = !!token;
+                const url = getFeedUrl(subreddit, useOAuth);
+                const headers = {};
+
+                if (token) {
+                    headers["Authorization"] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(url, { headers });
                 const data = await response.json();
                 const posts = data.data.children;
 
@@ -462,7 +605,11 @@
                 prefetchNextSubreddit(subreddit);
             } catch (error) {
                 console.log(error)
-                content.innerHTML = `<p>Error loading posts, error = ${error}</p>`;
+                let errorMsg = error.message || error;
+                if (errorMsg === "Failed to fetch" && localStorage.getItem("redditClientId")) {
+                    errorMsg += " (This could be a CORS issue. If running locally, try using a CORS-proxy, a browser extension, or run a local server)";
+                }
+                content.innerHTML = `<p>Error loading posts: ${errorMsg}</p>`;
             }
         }
 
@@ -488,19 +635,26 @@
 
             const cacheKey = getCacheKey(nextSubreddit);
             if (!cache[cacheKey]) {
-                let url = getFeedUrl(nextSubreddit);
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        cache[cacheKey] = data.data.children;
-                    })
-                    .catch(() => console.warn(`Prefetch failed for ${nextSubreddit}`));
+                getAccessToken().then(token => {
+                    const useOAuth = !!token;
+                    const url = getFeedUrl(nextSubreddit, useOAuth);
+                    const headers = {};
+                    if (token) {
+                        headers["Authorization"] = `Bearer ${token}`;
+                    }
+                    return fetch(url, { headers });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    cache[cacheKey] = data.data.children;
+                })
+                .catch(err => console.warn(`Prefetch failed for ${nextSubreddit}:`, err));
             }
         }
 
         document.addEventListener("DOMContentLoaded", function () {
             updateFeedButton();
+            updateCredentialsButton();
             populateTabs();
         });
     </script>
