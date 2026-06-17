@@ -644,8 +644,8 @@
                     <a href="https://www.reddit.com${post.data.permalink}" target="_blank">${post.data.title}</a>
                     <div class="post-info">
                         <img src="icons/up.svg" class="post-icon" alt="Score"> ${formattedScore}<span class="post-separator"></span>
-                        <img src="icons/clock.svg" class="post-icon" alt="Duration"> ${timeAgo}<span class="post-separator"></span>
-                        <img src="icons/comment.svg" class="post-icon" alt="Comments"> ${post.data.num_comments}
+                        <img src="icons/comment.svg" class="post-icon" alt="Comments"> ${post.data.num_comments}<span class="post-separator"></span>
+                        <img src="icons/clock.svg" class="post-icon" alt="Duration"> ${timeAgo}
                     </div>
                 </div>`
             }).join('');
